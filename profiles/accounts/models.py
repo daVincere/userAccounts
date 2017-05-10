@@ -45,7 +45,7 @@ class MyUserManager(BaseUserManager):
 		user.save(using=self._db)
 		return user
 
-USERNAME_REGEX = '^[a-zA-Z0-9.@+-]*$'
+USERNAME_REGEX = '^[a-zA-Z0-9]*$'
 # 
 # This is our UserModel, the customised one.
 class MyUser(AbstractBaseUser):

@@ -8,9 +8,10 @@ from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth import authenticate, get_user_model
 from django.core.validators import RegexValidator
 from .models import MyUser, Profile
+from django.db.models import Q
 
 # For defining a rule for User names
-USERNAME_REGEX = '^[a-zA-Z0-9@+-]*$'
+USERNAME_REGEX = '^[a-zA-Z0-9]*$'
 
 User = get_user_model()
 
@@ -67,15 +68,23 @@ class UserChangeForm(forms.ModelForm):
 
 # For getting the user Logged In
 class UserLoginForm(forms.Form):
-	username = forms.CharField(label='UserName', 
-								validators=[
-								RegexValidator(
-									regex = USERNAME_REGEX,
-									message = "Username must be alphanumeric",
-									code = 'In-Valid Username',
-								)]
-								)
-
+	"""
+	Below code allows only takes the username as
+	input and not the email id.
+	"""
+	# username = forms.CharField(label='UserName', 
+	# 							validators=[
+	# 							RegexValidator(
+	# 								regex = USERNAME_REGEX,
+	# 								message = "Username must be alphanumeric",
+	# 								code = 'In-Valid Username',
+	# 							)]
+	# 							)
+	
+	"""
+	For allowing entrace from both email-id and username
+	"""
+	query = forms.CharField(label='Username/Email')
 	password = forms.CharField(label='Password', widget=forms.PasswordInput)
 
 	"""
@@ -85,16 +94,38 @@ class UserLoginForm(forms.Form):
 	"""
 
 	def clean(self, *args, **kwargs):
-		username= self.cleaned_data.get('username')
+		query= self.cleaned_data.get('query')
 		password = self.cleaned_data.get('password')
-		
+
+		"""
+		The below commands look up the database twice.
+		Once for looking up the username and another for
+		looking up the email. We need to optimise that into
+		a single lookup.
+		"""
+		# user_qs1 = User.objects.filter(username__iexact=query)
+		# user_qs2 = User.objects.filter(email__iexact=query)
+		# user_qs_final = (user_qs1 | user_qs2 ).distinct()
+		"""
+		Q lookup to rescue. ~~ Above code
+		"""
+		user_qs_final = User.objects.filter(
+				Q(username__iexact=query)|
+				Q(email__iexact=query)
+			).distinct()
+
+		# check whether the user exists and it's just one query
+		if not user_qs_final.exists() and user_qs_final !=1:
+			raise forms.ValidationError("InValid Credentials")
 		"""
 		Most recommended way.
 		"""
-		user_obj = User.objects.filter(username=username).first()
-		# check the username
-		if not user_obj:
-			raise forms.ValidationError("Invalid Credentials -- Invalid Username") 
+		# When only looking for the username
+		# user_obj = User.objects.filter(username=query).first()
+		
+		# When looking for the email/username
+		user_obj = user_qs_final.first()
+		
 		# check password of the user
 		else:
 			if not user_obj.check_password(password):
@@ -109,7 +140,8 @@ class UserLoginForm(forms.Form):
 		# 	raise forms.ValidationError("Invalid Credentials")
 		# return super(UserLoginForm, self).clean(*args, **kwargs)
 		"""
-		above method is not recommended.
+		above method is not recommended as it can't be used for
+		email/username field being used interchangbly
 		"""	
 
 	"""
@@ -123,3 +155,15 @@ class UserLoginForm(forms.Form):
 	# 	if not user_exists and user_qs.count() !=1:
 	# 		raise form.ValidationError("Invalid Credentials")
 	# 	return username
+
+
+"""
+In the above code
+	query = User.objects.filter(username__iexact=username)
+
+	the __iexact looks for the exact username value, 
+	including the same camelcase.
+
+	Without the __iexact syntax, 
+	hasime would be equivalent to HaSiMe, which isn't desirable. 
+"""
