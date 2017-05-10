@@ -44,6 +44,15 @@ class UserCreationForm(forms.ModelForm):
 		user = super(UserCreationForm, self).save(commit=False)
 		user.set_password(self.cleaned_data['password1'])
 
+		"""
+		Iniially the account status would be Inactive.
+		After the user has confirmed his email, make it active
+		"""
+		user.is_active = False
+
+		# create a new user hash for activating email
+		
+
 		if commit:
 			user.save()
 		return user
@@ -127,9 +136,11 @@ class UserLoginForm(forms.Form):
 		user_obj = user_qs_final.first()
 		
 		# check password of the user
-		else:
-			if not user_obj.check_password(password):
-				raise forms.ValidationError("Invalid Credentials -- Invalid Password")
+		if not user_obj.check_password(password):
+			raise forms.ValidationError("Invalid Credentials -- Invalid Password")
+		if not user.is_active:
+			raise forms.ValidationError("Inactive User")
+		self.cleaned_data['user_obj'] = user_obj
 		return super(UserLoginForm, self).clean(*args, **kwargs)
 
 		"""

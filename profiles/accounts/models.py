@@ -8,6 +8,8 @@ from django.core.validators import RegexValidator
 
 # for post_save
 from django.db.models.signals import post_save
+# for getting the activation link
+from .util import code_generator
 # 
 # Model manager
 class MyUserManager(BaseUserManager):
@@ -115,6 +117,25 @@ class MyUser(AbstractBaseUser):
 	# 	"""
 	# 	return self.is_admin
 
+class ActivationProfile(models.Model):
+	user = models.ForeignKey(settings.AUTH_USER_MODEL)
+	key = models.CharField(max_length=150)
+	# expired = models.BooleanField(default=False)
+
+	def save(self, *args, **kwargs):
+		self.key = code_generator()
+		super(ActivationProfile, self).save(*args, **kwargs)
+
+def post_save_activation_receiver(sender, instance, created, *args, **kwargs):
+	if created:
+		# send email
+		print code_generator()
+
+post_save.connect(post_save_activation_receiver, sender=ActivationProfile)
+
+
+
+
 
 # Extending this custom user model
 class Profile(models.Model):
@@ -129,6 +150,7 @@ def post_save_user_model_receiver(sender, instance, created, *args, **kwargs):
 	if created:
 		try:
 			Profile.objects.create(user=instance)
+			ActivationProfile.objects.create(user=instance)
 		except:
 			pass
 
