@@ -16,9 +16,12 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 
-from accounts.views import home
+from accounts.views import home, register, userlogin
+
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', home, name='home'),
+    url(r'^register/$', register, name='register'),
+    url(r'^login/$', userlogin, name='login'),
 ]
