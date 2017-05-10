@@ -84,7 +84,7 @@ class UserLoginForm(forms.Form):
 	For that purpose we use clean methods
 	"""
 
-	def clean(self):
+	def clean(self, *args, **kwargs):
 		username= self.cleaned_data.get('username')
 		password = self.cleaned_data.get('password')
 		
@@ -99,7 +99,7 @@ class UserLoginForm(forms.Form):
 		else:
 			if not user_obj.check_password(password):
 				raise forms.ValidationError("Invalid Credentials -- Invalid Password")
-		# return super(UserLoginForm, self).clean(*args, **kwargs)
+		return super(UserLoginForm, self).clean(*args, **kwargs)
 
 		"""
 		Another way of authenticating the user, using: authenticate

@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from forms import UserCreationForm, UserLoginForm
 
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import login, get_user_model, logout
 
 User = get_user_model()
 
@@ -41,3 +41,8 @@ def userlogin(request, *args, **kwargs):
 		login(request, user_obj)
 		return HttpResponseRedirect("/")
 	return render(request, "accounts/login.html", {'form': form,})
+
+
+def userlogout(request):
+	logout(request)
+	return HttpResponseRedirect('/login')
